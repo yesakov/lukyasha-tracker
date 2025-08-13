@@ -64,6 +64,103 @@
             </div>
             <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Team</button>
         </form>
+
+        <hr>
+
+        <h3 class="mb-3">Games</h3>
+        <ul class="list-group mb-3">
+            {{range .Games}}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="/games/{{.ID}}" class="text-decoration-none">
+                    <span class="me-2">Game #{{.ID}}</span>
+                    <span class="badge bg-secondary">{{.HomeTeamGoals}} : {{.AwayTeamGoals}}</span>
+                </a>
+            </li>
+            {{end}}
+        </ul>
+
+        <h4 class="mb-3">Add New Game</h4>
+        <form method="post" action="/games" class="row g-2 mb-4">
+            <input type="hidden" name="event_id" value="{{.Event.ID}}">
+            <div class="col-12 col-md-4">
+                <select name="home_team_id" class="form-select" required>
+                    <option value="">Home team</option>
+                    {{range .Teams}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-12 col-md-4">
+                <select name="away_team_id" class="form-select" required>
+                    <option value="">Away team</option>
+                    {{range .Teams}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="col-12 col-md-4 d-grid">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Create Game</button>
+            </div>
+        </form>
+
+        <hr>
+        <h3 class="mb-3">Event Stats</h3>
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div class="card">
+              <div class="card-header bg-dark text-white">Standings</div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Team</th><th class="text-center">P</th><th class="text-center">W</th><th class="text-center">D</th><th class="text-center">L</th><th class="text-center">GF</th><th class="text-center">GA</th><th class="text-center">GD</th><th class="text-center">Pts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {{range .Standings}}
+                      <tr>
+                        <td>{{.Team.Name}}</td>
+                        <td class="text-center">{{.Played}}</td>
+                        <td class="text-center">{{.Wins}}</td>
+                        <td class="text-center">{{.Draws}}</td>
+                        <td class="text-center">{{.Losses}}</td>
+                        <td class="text-center">{{.GF}}</td>
+                        <td class="text-center">{{.GA}}</td>
+                        <td class="text-center">{{.GD}}</td>
+                        <td class="text-center fw-semibold">{{.Points}}</td>
+                      </tr>
+                      {{end}}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="card mb-3">
+              <div class="card-header bg-success text-white">Top Scorers</div>
+              <ul class="list-group list-group-flush">
+                {{range .TopScorers}}
+                  <li class="list-group-item d-flex justify-content-between"><span>{{.player}} <span class="text-muted">— {{.team}}</span></span><span class="badge bg-success rounded-pill">{{.count}}</span></li>
+                {{else}}
+                  <li class="list-group-item">No scorers yet</li>
+                {{end}}
+              </ul>
+            </div>
+            <div class="card">
+              <div class="card-header bg-info">Top Assistants</div>
+              <ul class="list-group list-group-flush">
+                {{range .TopAssists}}
+                  <li class="list-group-item d-flex justify-content-between"><span>{{.player}} <span class="text-muted">— {{.team}}</span></span><span class="badge bg-info text-dark rounded-pill">{{.count}}</span></li>
+                {{else}}
+                  <li class="list-group-item">No assists yet</li>
+                {{end}}
+              </ul>
+            </div>
+          </div>
+        </div>
     </div>
 </body>
 

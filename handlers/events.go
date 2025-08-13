@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"fmt"
-	"net/http"
+    "fmt"
+    "net/http"
+    "sort"
 
-	"github.com/yesakov/lukyasha-tracker/models"
+    "github.com/yesakov/lukyasha-tracker/models"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+    "github.com/gin-gonic/gin"
+    "gorm.io/gorm"
 )
 
 func NewEventForm() gin.HandlerFunc {
@@ -30,17 +31,17 @@ func ListEvents(db *gorm.DB) gin.HandlerFunc {
 }
 
 func ShowEvent(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := c.Param("id")
+    return func(c *gin.Context) {
+        id := c.Param("id")
 
-		var event models.Event
-		if err := db.First(&event, id).Error; err != nil {
-			c.String(http.StatusNotFound, "Event not found")
-			return
-		}
+        var event models.Event
+        if err := db.First(&event, id).Error; err != nil {
+            c.String(http.StatusNotFound, "Event not found")
+            return
+        }
 
-		var teams []models.Team
-		db.Where("event_id = ?", event.ID).Find(&teams)
+        var teams []models.Team
+        db.Where("event_id = ?", event.ID).Find(&teams)
 
 		// Load players for each team
 		for i := range teams {
@@ -49,12 +50,91 @@ func ShowEvent(db *gorm.DB) gin.HandlerFunc {
 			teams[i].Players = players
 		}
 
-		c.HTML(http.StatusOK, "event_detail.html", gin.H{
-			"Title": "Event Details",
-			"Event": event,
-			"Teams": teams,
-		})
-	}
+        // Load games for this event
+        var games []models.Game
+        db.Where("event_id = ?", event.ID).Find(&games)
+
+        // Build standings
+        type StandRow struct {
+            Team      models.Team
+            Played    int
+            Wins      int
+            Draws     int
+            Losses    int
+            GF        int
+            GA        int
+            GD        int
+            Points    int
+        }
+
+        standMap := make(map[uint]*StandRow)
+        for _, t := range teams {
+            standMap[t.ID] = &StandRow{Team: t}
+        }
+        for _, g := range games {
+            home := standMap[g.HomeTeamID]
+            away := standMap[g.AwayTeamID]
+            if home == nil || away == nil { continue }
+            home.Played++; away.Played++
+            home.GF += g.HomeTeamGoals; home.GA += g.AwayTeamGoals
+            away.GF += g.AwayTeamGoals; away.GA += g.HomeTeamGoals
+            if g.HomeTeamGoals > g.AwayTeamGoals {
+                home.Wins++; home.Points += 3; away.Losses++
+            } else if g.HomeTeamGoals < g.AwayTeamGoals {
+                away.Wins++; away.Points += 3; home.Losses++
+            } else {
+                home.Draws++; away.Draws++; home.Points++; away.Points++
+            }
+        }
+        for _, s := range standMap { s.GD = s.GF - s.GA }
+        standings := make([]*StandRow, 0, len(standMap))
+        for _, s := range standMap { standings = append(standings, s) }
+        sort.Slice(standings, func(i, j int) bool {
+            if standings[i].Points != standings[j].Points { return standings[i].Points > standings[j].Points }
+            if standings[i].GD != standings[j].GD { return standings[i].GD > standings[j].GD }
+            if standings[i].GF != standings[j].GF { return standings[i].GF > standings[j].GF }
+            return standings[i].Team.Name < standings[j].Team.Name
+        })
+
+        // Leaderboards (top scorers/assistants)
+        type aggRow struct { PlayerID uint; Cnt int }
+        var gameIDs []uint
+        db.Model(&models.Game{}).Where("event_id = ?", event.ID).Pluck("id", &gameIDs)
+        topScorers := []gin.H{}
+        topAssists := []gin.H{}
+        if len(gameIDs) > 0 {
+            var gr []aggRow
+            db.Model(&models.GamePlayerStat{}).
+                Select("player_id, COUNT(*) as cnt").
+                Where("type = ? AND game_id IN ?", models.StatTypeGoal, gameIDs).
+                Group("player_id").Order("cnt DESC").Limit(10).Scan(&gr)
+            for _, r := range gr {
+                var p models.Player; var t models.Team
+                db.First(&p, r.PlayerID); db.First(&t, p.TeamID)
+                topScorers = append(topScorers, gin.H{"player": p.Name, "team": t.Name, "count": r.Cnt})
+            }
+            gr = nil
+            db.Model(&models.GamePlayerStat{}).
+                Select("player_id, COUNT(*) as cnt").
+                Where("type = ? AND game_id IN ?", models.StatTypeAssist, gameIDs).
+                Group("player_id").Order("cnt DESC").Limit(10).Scan(&gr)
+            for _, r := range gr {
+                var p models.Player; var t models.Team
+                db.First(&p, r.PlayerID); db.First(&t, p.TeamID)
+                topAssists = append(topAssists, gin.H{"player": p.Name, "team": t.Name, "count": r.Cnt})
+            }
+        }
+
+        c.HTML(http.StatusOK, "event_detail.html", gin.H{
+            "Title": "Event Details",
+            "Event": event,
+            "Teams": teams,
+            "Games": games,
+            "Standings": standings,
+            "TopScorers": topScorers,
+            "TopAssists": topAssists,
+        })
+    }
 }
 
 func CreateEvent(db *gorm.DB) gin.HandlerFunc {

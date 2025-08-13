@@ -1,0 +1,19 @@
+<ul class="list-group">
+  {{if .Stats}}
+    {{range .Stats}}
+      <li class="list-group-item d-flex justify-content-between align-items-center" id="stat-{{.ID}}">
+        <div>
+          <span class="badge rounded-pill me-2 {{if eq .Type "goal"}}bg-success{{else}}bg-info text-dark{{end}}">{{.Type}}</span>
+          <span class="fw-semibold">{{.Player}}</span>
+          <span class="text-muted">— {{.TeamName}}</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" hx-delete="/stats/{{.ID}}" hx-target="#stat-{{.ID}}" hx-swap="delete" title="Delete">
+          <i class="bi bi-x"></i>
+        </button>
+      </li>
+    {{end}}
+  {{else}}
+    <li class="list-group-item">No goals yet</li>
+  {{end}}
+</ul>
+

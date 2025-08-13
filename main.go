@@ -1,17 +1,17 @@
 package main
 
 import (
-	// "html/template"
-	"net/http"
+    // "html/template"
+    "net/http"
 
-	"github.com/gin-gonic/gin"
-	moderncSqlite "gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+    "github.com/gin-gonic/gin"
+    moderncSqlite "gorm.io/driver/sqlite"
+    "gorm.io/gorm"
 
-	"github.com/yesakov/lukyasha-tracker/handlers"
-	"github.com/yesakov/lukyasha-tracker/models"
+    "github.com/yesakov/lukyasha-tracker/handlers"
+    "github.com/yesakov/lukyasha-tracker/models"
 
-	_ "modernc.org/sqlite"
+    _ "modernc.org/sqlite"
 )
 
 var DB *gorm.DB
@@ -28,17 +28,20 @@ var DB *gorm.DB
 // }
 
 func InitDB() {
-	var err error
-	DB, err = gorm.Open(moderncSqlite.New(moderncSqlite.Config{
-		DSN:        "data.db",
-		DriverName: "sqlite",
-	}), &gorm.Config{})
+    var err error
+    DB, err = gorm.Open(moderncSqlite.New(moderncSqlite.Config{
+        DSN:        "data.db",
+        DriverName: "sqlite",
+    }), &gorm.Config{})
 
-	if err != nil {
-		panic("failed to connect database: " + err.Error())
-	}
+    if err != nil {
+        panic("failed to connect database: " + err.Error())
+    }
 
-	DB.AutoMigrate(&models.Event{}, &models.Game{}, &models.GamePlayerStat{}, &models.Player{}, &models.Team{})
+    // Ensure SQLite enforces foreign keys
+    DB.Exec("PRAGMA foreign_keys = ON;")
+
+    DB.AutoMigrate(&models.Event{}, &models.Game{}, &models.GamePlayerStat{}, &models.Player{}, &models.Team{})
 }
 
 // func SeedDB() {
@@ -65,15 +68,21 @@ func main() {
 		})
 	})
 
-	r.GET("/events/new", handlers.NewEventForm())
-	r.GET("/events", handlers.ListEvents(DB))
-	r.GET("/events/:id", handlers.ShowEvent(DB))
-	r.POST("/events", handlers.CreateEvent(DB))
+    r.GET("/events/new", handlers.NewEventForm())
+    r.GET("/events", handlers.ListEvents(DB))
+    r.GET("/events/:id", handlers.ShowEvent(DB))
+    r.POST("/events", handlers.CreateEvent(DB))
 
-	r.POST("/teams", handlers.CreateTeamHTMX(DB))
-	r.POST("/players", handlers.CreatePlayerHTMX(DB))
-	r.DELETE("/teams/:id", handlers.DeleteTeam(DB))
-	r.DELETE("/players/:id", handlers.DeletePlayer(DB))
+    r.POST("/teams", handlers.CreateTeamHTMX(DB))
+    r.POST("/players", handlers.CreatePlayerHTMX(DB))
+    r.DELETE("/teams/:id", handlers.DeleteTeam(DB))
+    r.DELETE("/players/:id", handlers.DeletePlayer(DB))
+
+    // Games and scoring
+    r.POST("/games", handlers.CreateGameForm(DB))
+    r.GET("/games/:id", handlers.ShowGame(DB))
+    r.POST("/games/:id/goals", handlers.AddGoalHTMX(DB))
+    r.DELETE("/stats/:id", handlers.DeleteStat(DB))
 
 	// r.GET("/events/:id", handlers.ShowEvent(DB))
 
@@ -105,5 +114,5 @@ func main() {
 	// r.PUT("/stats/:id", handlers.UpdateStat(DB))
 	// r.DELETE("/stats/:id", handlers.DeleteStat(DB))
 
-	r.Run(":8080")
+    r.Run(":8080")
 }
