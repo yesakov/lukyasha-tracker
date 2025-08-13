@@ -1,0 +1,26 @@
+{{define "events_new_form.html"}}
+<div id="new-event-form-container">
+    {{if .Error}}
+    <div class="alert alert-danger" role="alert">
+        {{.Error}}
+    </div>
+    {{end}}
+
+    <form hx-post="/events" hx-target="#new-event-form-container" hx-swap="outerHTML" class="needs-validation"
+        novalidate>
+        <div class="mb-3">
+            <label for="name" class="form-label">Event Name</label>
+            <input type="text" class="form-control" id="name" name="name" required value="{{.Name}}">
+        </div>
+        <div class="mb-3">
+            <label for="date" class="form-label">Event Date</label>
+            <input type="date" class="form-control" id="date" name="date" required value="{{.Date}}">
+        </div>
+        <div class="mb-3">
+            <label for="event_url" class="form-label">Event URL</label>
+            <input type="text" class="form-control" id="event_url" name="event_url" required value="{{.EventURL}}">
+        </div>
+        <button type="submit" class="btn btn-primary">Create Event</button>
+    </form>
+</div>
+{{end}}

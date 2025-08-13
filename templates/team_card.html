@@ -1,0 +1,23 @@
+<div class="card border-success mb-3">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <span class="fw-bold">{{.Name}}</span>
+        <button class="btn btn-sm btn-danger" hx-delete="/teams/{{.ID}}" hx-target="#team-card-{{.ID}}"
+            hx-swap="delete"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="card-body bg-light">
+        <h6 class="text-success">Players:</h6>
+        <ul class="list-group mb-2" id="players-{{.ID}}">
+            {{range .Players}}
+            {{template "player_item.html" .}}
+            {{end}}
+        </ul>
+        <form class="add-player-form" hx-post="/players" hx-target="#players-{{.ID}}" hx-swap="beforeend">
+            <input type="hidden" name="team_id" value="{{.ID}}">
+            <div class="input-group">
+                <input type="text" class="form-control border-success" name="name" placeholder="New player name"
+                    required>
+                <button type="submit" class="btn btn-primary">Add Player</button>
+            </div>
+        </form>
+    </div>
+</div>

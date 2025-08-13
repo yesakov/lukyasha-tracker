@@ -1,0 +1,7 @@
+<li class="list-group-item d-flex justify-content-between align-items-center" id="player-{{.ID}}">
+    <span class="text-dark fw-semibold">{{.Name}}</span>
+    <button class="btn btn-sm btn-danger" hx-delete="/players/{{.ID}}" hx-target="#player-{{.ID}}" hx-swap="delete">
+        <i class="bi bi-x-lg"></i>
+    </button>
+
+</li>
