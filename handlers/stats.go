@@ -72,10 +72,31 @@ func UpdateStat(db *gorm.DB) gin.HandlerFunc {
 func DeleteStat(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
+		// Load stat to adjust game score if needed
+		var stat models.GamePlayerStat
+		if err := db.First(&stat, id).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Stat not found"})
+			return
+		}
+
+		// If this is a goal-like stat, decrement the appropriate team's score
+		if stat.Type == models.StatTypeGoal || stat.Type == models.StatTypePenalty || stat.Type == models.StatTypeOwnGoal {
+			var game models.Game
+			if err := db.First(&game, stat.GameID).Error; err == nil {
+				if stat.TeamID == game.HomeTeamID {
+					db.Model(&game).UpdateColumn("home_team_goals", gorm.Expr("home_team_goals - 1"))
+				} else if stat.TeamID == game.AwayTeamID {
+					db.Model(&game).UpdateColumn("away_team_goals", gorm.Expr("away_team_goals - 1"))
+				}
+			}
+			// Delete any assists linked to this goal
+			db.Where("goal_stat_id = ?", stat.ID).Delete(&models.GamePlayerStat{})
+		}
+
 		if err := db.Delete(&models.GamePlayerStat{}, id).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.Status(http.StatusNoContent)
+		c.Status(http.StatusOK)
 	}
 }

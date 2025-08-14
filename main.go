@@ -1,57 +1,37 @@
 package main
 
 import (
-    // "html/template"
-    "net/http"
+	// "html/template"
+	"net/http"
 
-    "github.com/gin-gonic/gin"
-    moderncSqlite "gorm.io/driver/sqlite"
-    "gorm.io/gorm"
+	"github.com/gin-gonic/gin"
+	moderncSqlite "gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
-    "github.com/yesakov/lukyasha-tracker/handlers"
-    "github.com/yesakov/lukyasha-tracker/models"
+	"github.com/yesakov/lukyasha-tracker/handlers"
+	"github.com/yesakov/lukyasha-tracker/models"
 
-    _ "modernc.org/sqlite"
+	_ "modernc.org/sqlite"
 )
 
 var DB *gorm.DB
 
-// func LoadTemplates() *template.Template {
-// 	return template.Must(template.ParseFiles(
-// 		"templates/layout.html",
-// 		"templates/home.html",
-// 		"templates/events.html",
-// 		"templates/events_new.html",
-// 		"templates/event_detail.html",
-// 	))
-
-// }
-
 func InitDB() {
-    var err error
-    DB, err = gorm.Open(moderncSqlite.New(moderncSqlite.Config{
-        DSN:        "data.db",
-        DriverName: "sqlite",
-    }), &gorm.Config{})
+	var err error
+	DB, err = gorm.Open(moderncSqlite.New(moderncSqlite.Config{
+		DSN:        "data.db",
+		DriverName: "sqlite",
+	}), &gorm.Config{})
 
-    if err != nil {
-        panic("failed to connect database: " + err.Error())
-    }
+	if err != nil {
+		panic("failed to connect database: " + err.Error())
+	}
 
-    // Ensure SQLite enforces foreign keys
-    DB.Exec("PRAGMA foreign_keys = ON;")
+	// Ensure SQLite enforces foreign keys
+	DB.Exec("PRAGMA foreign_keys = ON;")
 
-    DB.AutoMigrate(&models.Event{}, &models.Game{}, &models.GamePlayerStat{}, &models.Player{}, &models.Team{})
+	DB.AutoMigrate(&models.Event{}, &models.Game{}, &models.GamePlayerStat{}, &models.Player{}, &models.Team{})
 }
-
-// func SeedDB() {
-// 	var count int64
-// 	DB.Model(&models.Event{}).Count(&count)
-// 	if count == 0 {
-// 		DB.Create(&models.Event{Name: "Spring Tournament", Date: "2025-04-15"})
-// 		DB.Create(&models.Event{Name: "Summer League", Date: "2025-07-01"})
-// 	}
-// }
 
 func main() {
 	r := gin.Default()
@@ -59,60 +39,39 @@ func main() {
 	// Load HTML templates
 	r.LoadHTMLGlob("templates/*")
 
+	// Serve static assets (CSS, JS, images)
+	r.Static("/static", "static")
+
 	InitDB()
-	// SeedDB()
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "home.html", gin.H{
-			"title": "Main website",
+			"Title":     "Main website",
+			"ActiveTab": "home",
+			"Content":   "content_home",
 		})
 	})
 
-    r.GET("/events/new", handlers.NewEventForm())
-    r.GET("/events", handlers.ListEvents(DB))
-    r.GET("/events/:id", handlers.ShowEvent(DB))
-    r.POST("/events", handlers.CreateEvent(DB))
+	r.GET("/events/new", handlers.NewEventForm())
+	r.GET("/events", handlers.ListEvents(DB))
+	r.GET("/events/:id", handlers.ShowEvent(DB))
+	r.GET("/events/:id/games_partial", handlers.EventGamesPartial(DB))
+	r.GET("/events/:id/stats_partial", handlers.EventStatsPartial(DB))
+	r.POST("/events", handlers.CreateEvent(DB))
+	r.GET("/events/:id/team_options", handlers.TeamOptions(DB))
+	r.DELETE("/events/:id", handlers.DeleteEvent(DB))
 
-    r.POST("/teams", handlers.CreateTeamHTMX(DB))
-    r.POST("/players", handlers.CreatePlayerHTMX(DB))
-    r.DELETE("/teams/:id", handlers.DeleteTeam(DB))
-    r.DELETE("/players/:id", handlers.DeletePlayer(DB))
+	r.POST("/teams", handlers.CreateTeamHTMX(DB))
+	r.POST("/players", handlers.CreatePlayerHTMX(DB))
+	r.DELETE("/teams/:id", handlers.DeleteTeam(DB))
+	r.DELETE("/players/:id", handlers.DeletePlayer(DB))
 
-    // Games and scoring
-    r.POST("/games", handlers.CreateGameForm(DB))
-    r.GET("/games/:id", handlers.ShowGame(DB))
-    r.POST("/games/:id/goals", handlers.AddGoalHTMX(DB))
-    r.DELETE("/stats/:id", handlers.DeleteStat(DB))
+	// Games and scoring
+	r.POST("/games", handlers.CreateGameForm(DB))
+	r.GET("/games/:id", handlers.ShowGame(DB))
+	r.DELETE("/games/:id", handlers.DeleteGame(DB))
+	r.POST("/games/:id/goals", handlers.AddGoalHTMX(DB))
+	r.DELETE("/stats/:id", handlers.DeleteStat(DB))
 
-	// r.GET("/events/:id", handlers.ShowEvent(DB))
-
-	// r.PUT("/events/:id", handlers.UpdateEvent(DB))
-	// r.DELETE("/events/:id", handlers.DeleteEvent(DB))
-
-	// r.GET("/teams", handlers.GetTeams(DB))
-	// r.GET("/teams/:id", handlers.GetTeam(DB))
-	// r.POST("/teams", handlers.CreateTeamJSON(DB))
-
-	// r.PUT("/teams/:id", handlers.UpdateTeam(DB))
-	// r.DELETE("/teams/:id", handlers.DeleteTeam(DB))
-
-	// r.GET("/players", handlers.GetPlayers(DB))
-	// r.GET("/players/:id", handlers.GetPlayer(DB))
-	// r.POST("/players", handlers.CreatePlayerJSON(DB))
-	// r.PUT("/players/:id", handlers.UpdatePlayer(DB))
-	// r.DELETE("/players/:id", handlers.DeletePlayer(DB))
-
-	// r.GET("/games", handlers.GetGames(DB))
-	// r.GET("/games/:id", handlers.GetGame(DB))
-	// r.POST("/games", handlers.CreateGame(DB))
-	// r.PUT("/games/:id", handlers.UpdateGame(DB))
-	// r.DELETE("/games/:id", handlers.DeleteGame(DB))
-
-	// r.GET("/stats", handlers.GetStats(DB))
-	// r.GET("/stats/:id", handlers.GetStat(DB))
-	// r.POST("/stats", handlers.CreateStat(DB))
-	// r.PUT("/stats/:id", handlers.UpdateStat(DB))
-	// r.DELETE("/stats/:id", handlers.DeleteStat(DB))
-
-    r.Run(":8080")
+	r.Run(":8080")
 }

@@ -36,11 +36,16 @@ type GamePlayerStat struct {
     PlayerID uint   `form:"player_id" json:"player_id" gorm:"not null;index"`
     GameID   uint   `form:"game_id" json:"game_id" gorm:"not null;index"`
     TeamID   uint   `form:"team_id" json:"team_id" gorm:"not null;index"`
-    Type     string `form:"type" json:"type" gorm:"not null;index"` // "goal" or "assist"
+    Type     string `form:"type" json:"type" gorm:"not null;index"` // "goal", "penalty", "own_goal", or "assist"
+    Minute   int    `form:"minute" json:"minute" gorm:"index"`
+    // For assists, reference the goal stat they belong to
+    GoalStatID *uint `form:"goal_stat_id" json:"goal_stat_id" gorm:"index"`
 }
 
 // Optional: constants for Type field
 const (
-	StatTypeGoal   = "goal"
-	StatTypeAssist = "assist"
+    StatTypeGoal   = "goal"
+    StatTypeAssist = "assist"
+    StatTypePenalty = "penalty"
+    StatTypeOwnGoal = "own_goal"
 )

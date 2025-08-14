@@ -1,63 +1,33 @@
+{{define "event_detail.html"}}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
     <title>{{.Title}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"
-        integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm"
-        crossorigin="anonymous"></script>
+    {{template "base_head" .}}
 </head>
 
-<style>
-    body {
-        background-color: #f8f9fa;
-    }
-</style>
-
-
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="/">⚽ Football Tracker</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/events">Events</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/events/new">Create Event</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container my-4">
+    {{template "base_nav" .}}
+    <div class="container my-4 pb-5">
         <h2 class="mb-4">Event: {{.Event.Name}}</h2>
         <p><strong>Date:</strong> {{.Event.Date}}</p>
         <p><strong>URL:</strong> {{.Event.EventURL}}</p>
 
         <hr>
 
-        <h3>Teams</h3>
-        <div id="teamList">
+        <h3 class="fw-bold">Teams</h3>
+        <div id="teamList" class="row row-cols-1 row-cols-md-2 g-3">
             {{range .Teams}}
-            {{template "team_card.html" .}}
+            <div class="col">{{template "team_card.html" .}}</div>
             {{end}}
         </div>
 
         <hr>
 
         <h4 class="mb-3">Add New Team</h4>
-        <form hx-post="/teams" hx-target="#teamList" hx-swap="beforeend" class="mb-4">
+        <form hx-post="/teams" hx-target="#teamList" hx-swap="beforeend" class="mb-4"
+            hx-on::after-request="if(event.detail.successful) this.reset()">
             <input type="hidden" name="event_id" value="{{.Event.ID}}">
             <div class="mb-3">
                 <input type="text" class="form-control" name="name" placeholder="Team Name" required>
@@ -67,34 +37,25 @@
 
         <hr>
 
-        <h3 class="mb-3">Games</h3>
-        <ul class="list-group mb-3">
-            {{range .Games}}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <a href="/games/{{.ID}}" class="text-decoration-none">
-                    <span class="me-2">Game #{{.ID}}</span>
-                    <span class="badge bg-secondary">{{.HomeTeamGoals}} : {{.AwayTeamGoals}}</span>
-                </a>
-            </li>
-            {{end}}
-        </ul>
+        <h3 class="mb-3 fw-bold">Games <span id="games-count" class="badge bg-secondary">{{len .Games}}</span></h3>
+        {{template "event_games_list.html" .}}
 
         <h4 class="mb-3">Add New Game</h4>
         <form method="post" action="/games" class="row g-2 mb-4">
             <input type="hidden" name="event_id" value="{{.Event.ID}}">
             <div class="col-12 col-md-4">
-                <select name="home_team_id" class="form-select" required>
+                <select name="home_team_id" id="home_team_id" class="form-select" required>
                     <option value="">Home team</option>
                     {{range .Teams}}
-                        <option value="{{.ID}}">{{.Name}}</option>
+                    <option value="{{.ID}}">{{.Name}}</option>
                     {{end}}
                 </select>
             </div>
             <div class="col-12 col-md-4">
-                <select name="away_team_id" class="form-select" required>
+                <select name="away_team_id" id="away_team_id" class="form-select" required>
                     <option value="">Away team</option>
                     {{range .Teams}}
-                        <option value="{{.ID}}">{{.Name}}</option>
+                    <option value="{{.ID}}">{{.Name}}</option>
                     {{end}}
                 </select>
             </div>
@@ -102,66 +63,27 @@
                 <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Create Game</button>
             </div>
         </form>
+        <div hx-get="/events/{{.Event.ID}}/team_options" hx-trigger="team-added from:body" hx-swap="none"></div>
 
         <hr>
-        <h3 class="mb-3">Event Stats</h3>
-        <div class="row g-3">
-          <div class="col-12 col-lg-6">
-            <div class="card">
-              <div class="card-header bg-dark text-white">Standings</div>
-              <div class="card-body p-0">
-                <div class="table-responsive">
-                  <table class="table table-striped table-hover mb-0">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Team</th><th class="text-center">P</th><th class="text-center">W</th><th class="text-center">D</th><th class="text-center">L</th><th class="text-center">GF</th><th class="text-center">GA</th><th class="text-center">GD</th><th class="text-center">Pts</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {{range .Standings}}
-                      <tr>
-                        <td>{{.Team.Name}}</td>
-                        <td class="text-center">{{.Played}}</td>
-                        <td class="text-center">{{.Wins}}</td>
-                        <td class="text-center">{{.Draws}}</td>
-                        <td class="text-center">{{.Losses}}</td>
-                        <td class="text-center">{{.GF}}</td>
-                        <td class="text-center">{{.GA}}</td>
-                        <td class="text-center">{{.GD}}</td>
-                        <td class="text-center fw-semibold">{{.Points}}</td>
-                      </tr>
-                      {{end}}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12 col-lg-6">
-            <div class="card mb-3">
-              <div class="card-header bg-success text-white">Top Scorers</div>
-              <ul class="list-group list-group-flush">
-                {{range .TopScorers}}
-                  <li class="list-group-item d-flex justify-content-between"><span>{{.player}} <span class="text-muted">— {{.team}}</span></span><span class="badge bg-success rounded-pill">{{.count}}</span></li>
-                {{else}}
-                  <li class="list-group-item">No scorers yet</li>
-                {{end}}
-              </ul>
-            </div>
-            <div class="card">
-              <div class="card-header bg-info">Top Assistants</div>
-              <ul class="list-group list-group-flush">
-                {{range .TopAssists}}
-                  <li class="list-group-item d-flex justify-content-between"><span>{{.player}} <span class="text-muted">— {{.team}}</span></span><span class="badge bg-info text-dark rounded-pill">{{.count}}</span></li>
-                {{else}}
-                  <li class="list-group-item">No assists yet</li>
-                {{end}}
-              </ul>
-            </div>
-          </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-3 fw-bold">Event Stats</h3>
+            <button class="btn btn-sm btn-outline-danger" hx-delete="/events/{{.Event.ID}}"
+                hx-confirm="Delete this event and all related data?" hx-swap="none"><i class="bi bi-trash me-1"></i>
+                Delete Event</button>
         </div>
+        {{template "event_stats.html" .}}
+
+        <!-- Live refresh on game deletion -->
+        <div hx-get="/events/{{.Event.ID}}/games_partial" hx-trigger="game-removed from:body" hx-target="#games-list"
+            hx-swap="outerHTML"></div>
+        <div hx-get="/events/{{.Event.ID}}/stats_partial" hx-trigger="game-removed from:body" hx-target="#event-stats"
+            hx-swap="outerHTML"></div>
     </div>
+    {{template "base_mobile_tabs" .}}
+    <div id="app-toast" class="app-toast" aria-live="polite"></div>
+    {{template "base_scripts" .}}
 </body>
 
 </html>
+{{end}}

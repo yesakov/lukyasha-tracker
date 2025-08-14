@@ -1,19 +1,41 @@
-<ul class="list-group">
-  {{if .Stats}}
-    {{range .Stats}}
-      <li class="list-group-item d-flex justify-content-between align-items-center" id="stat-{{.ID}}">
+<div id="goals-list">
+  <ul class="list-group">
+    {{if .GoalRows}}
+    {{range .GoalRows}}
+    <li class="list-group-item" id="goalrow-{{.ID}}">
+      <div class="d-flex justify-content-between align-items-center">
         <div>
-          <span class="badge rounded-pill me-2 {{if eq .Type "goal"}}bg-success{{else}}bg-info text-dark{{end}}">{{.Type}}</span>
-          <span class="fw-semibold">{{.Player}}</span>
-          <span class="text-muted">— {{.TeamName}}</span>
+          {{if eq .GoalType "penalty"}}
+          <span class="badge rounded-pill me-2 bg-warning text-dark">penalty</span>
+          {{else if eq .GoalType "own_goal"}}
+          <span class="badge rounded-pill me-2 bg-danger">own goal</span>
+          {{else}}
+          <span class="badge rounded-pill me-2 bg-success">goal</span>
+          {{end}}
+          <span class="fw-semibold">{{.Scorer}}</span>
+          <span class="text-muted">— {{.ScoringTeam}}</span>
+          {{if .Minute}}
+          <span class="ms-2 badge bg-light">{{.Minute}}'</span>
+          {{end}}
         </div>
-        <button class="btn btn-sm btn-outline-danger" hx-delete="/stats/{{.ID}}" hx-target="#stat-{{.ID}}" hx-swap="delete" title="Delete">
+        <button class="btn icon-btn" hx-delete="/stats/{{.ID}}" hx-target="#goalrow-{{.ID}}" hx-swap="delete"
+          title="Delete goal and assist">
           <i class="bi bi-x"></i>
         </button>
-      </li>
+      </div>
+      {{if .AssistID}}
+      <div class="mt-1 ps-4 text-muted">
+        <i class="bi bi-arrow-return-right me-1"></i>
+        Assist: <span class="fw-semibold">{{.AssistPlayer}}</span>
+        <span>— {{.AssistTeam}}</span>
+      </div>
+      {{end}}
+    </li>
     {{end}}
-  {{else}}
+    {{else}}
     <li class="list-group-item">No goals yet</li>
-  {{end}}
-</ul>
+    {{end}}
+  </ul>
 
+  <span id="scoreline" hx-swap-oob="innerHTML" hidden>{{.Game.HomeTeamGoals}} : {{.Game.AwayTeamGoals}}</span>
+</div>

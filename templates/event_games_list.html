@@ -1,0 +1,16 @@
+<ul class="list-group mb-3" id="games-list">
+  {{range .Games}}
+  <li class="list-group-item d-flex justify-content-between align-items-center" id="game-{{.ID}}">
+    <a href="/games/{{.ID}}" class="text-decoration-none">
+      <span class="me-2">Game #{{.ID}}</span>
+      <span class="badge bg-secondary">{{.HomeTeamGoals}} : {{.AwayTeamGoals}}</span>
+    </a>
+    <button type="button" class="btn icon-btn" title="Delete game" hx-delete="/games/{{.ID}}" hx-target="#game-{{.ID}}"
+      hx-swap="delete" hx-confirm="Delete this game and all its stats?">
+      <i class="bi bi-trash"></i>
+    </button>
+  </li>
+  {{else}}
+  <li class="list-group-item">No games yet</li>
+  {{end}}
+</ul>

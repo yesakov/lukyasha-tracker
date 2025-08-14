@@ -32,7 +32,8 @@ func CreateTeamHTMX(db *gorm.DB) gin.HandlerFunc {
 		db.Create(&team)
 		team.Players = []models.Player{} // empty
 
-		// This is the magic:
+		// Notify client to refresh team options via htmx event
+		c.Header("HX-Trigger", "team-added")
 		c.HTML(http.StatusOK, "team_card.html", team)
 	}
 }
@@ -50,7 +51,7 @@ func DeleteTeam(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.Status(http.StatusNoContent) // HTMX will remove the target from DOM
+		c.Status(http.StatusOK) // HTMX will remove the target from DOM
 	}
 }
 

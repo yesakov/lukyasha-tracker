@@ -1,0 +1,14 @@
+{{/* OOB update innerHTML of selects with new options */}}
+<select id="home_team_id" hx-swap-oob="innerHTML">
+  <option value="">Home team</option>
+  {{range .Teams}}
+    <option value="{{.ID}}">{{.Name}}</option>
+  {{end}}
+</select>
+<select id="away_team_id" hx-swap-oob="innerHTML">
+  <option value="">Away team</option>
+  {{range .Teams}}
+    <option value="{{.ID}}">{{.Name}}</option>
+  {{end}}
+</select>
+

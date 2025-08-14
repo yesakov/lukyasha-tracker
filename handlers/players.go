@@ -121,6 +121,6 @@ func DeletePlayer(db *gorm.DB) gin.HandlerFunc {
 			c.String(http.StatusInternalServerError, "Delete error")
 			return
 		}
-		c.Status(http.StatusNoContent) // HTMX will remove the target from DOM
+		c.Status(http.StatusOK) // HTMX will remove the target from DOM
 	}
 }
